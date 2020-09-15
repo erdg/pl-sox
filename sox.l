@@ -1,0 +1,74 @@
+(de sox (String)
+   (call 'sh "-c" (text "sox @1" String)) )
+
+(de man-sox () (call 'man "sox"))
+
+(de play (File)
+   (call 'sh "-c"
+      (text "play @1" File)))
+
+(de play-with-effects (File Effects)
+   (call 'sh "-c" (text "play @1 @2" File Effects)) )
+
+(de record (File)
+   (call 'rec "-r" "48000" "-c" "1" File))
+
+(de record-stereo (File)
+   (call 'rec "-r" "48000" "-c" "2" File))
+
+(de record-stereo-layer-over (Orig New)
+   (call 'sh "-c" (text "play -q @1 & rec -c 2 @2" Orig New)) )
+
+(de record-layer-over (Orig New)
+   (call 'sh "-c" (text "play -q @1 & rec -c 1 @2" Orig New)) )
+
+(de mix-tracks (T1 T2 Mix)
+   (call 'sh "-c" (text "sox -m @1 @2 @3" T1 T2 Mix)) )
+
+(de new-mix (Name . Tracks)
+   (call 'sh "-c"
+      (pack "sox -m " (glue " " Tracks) " " Name) ) )
+
+(de remove-silence-beg (File)
+   (let New (append-file-name File "%.wav")
+      (call 'sh "-c"
+         (text "sox @1 @2 silence 1 0.1 1%" File New) )
+      New ) )
+
+(de append-file-name (File Text)
+   (pack (car (split (chop File) ".")) Text) )
+
+(de remove-silence-end (File)
+   (and File
+      (reverse-audio @)
+      (remove-silence-beg @)
+      (reverse-audio @) ) )
+
+(de remove-bounding-silence (File)
+   (and File
+      (remove-silence-beg @)
+      (reverse-audio @)
+      (remove-silence-beg @)
+      (reverse-audio @) ) )
+
+(de reverse-audio (File)
+   (let New (append-file-name File "%.wav")
+      (call 'sh "-c"
+         (text "sox @1 @2 reverse" File New) )
+      New ) )
+
+
+(scl 3)
+
+## (time-calc 4 "4/4" 60) -> "16.000"
+## (time-calc 4 "4/4" 88) -> "10.912"
+(de time-calc (Measures TimeSig Tempo)
+   # convert musical time to seconds, e.g. "Four measures of 4/4 at 88bpm (1/4
+   # note) lasts 10.912 seconds"
+   (default TimeSig "4/4")
+   (default Unit 4)
+   (format 
+      (* Measures
+         (any (caar (split (chop TimeSig) "/")))
+         (*/ 60 1.0 Tempo) )
+      *Scl ) )
