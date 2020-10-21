@@ -34,6 +34,14 @@
 (de record-stereo-over (Orig New)
    (call 'sh "-c" (text "play -q @1 & rec -c 2 @2" Orig New)) )
 
+
+### TODO ###
+#
+# Clean up the pollution! Must find a way to manage the growing
+# pile of files.
+#
+###
+
 # NOTE - e.g. "-v 0.6 bass.wav" to adjust track volume in mix
 (de new-mix (Name . Tracks)
    (call 'sh "-c"
@@ -125,6 +133,7 @@
       (remove-beggining-silence @)
       (trim-audio-to-seconds @ (time-calc Measures TimeSig Tempo)) ) )
 
+# TODO - implement using 'splice' instead of 'concatenate'
 (de loopify (File New Times)
    # "sox FILE FILE FILE FILE FILE new.wav"
    (call 'sh "-c"
