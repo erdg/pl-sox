@@ -113,6 +113,12 @@
          (*/ 60 1.0 Tempo) )
       *Scl ) )
 
+(de bpm->seconds/beat (Bpm)
+   (format (*/ 60 1.0 Bpm) *Scl) )
+
+(de bpm->ms/beat (Bpm)
+   (any (bpm->seconds/beat Bpm)) )
+
 (de preloopify (File Measures TimeSig Tempo)
    # make a recording loopable for a given number of Measures/Tempo/TimeSig
    (and File
