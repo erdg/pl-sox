@@ -130,14 +130,22 @@
    (call 'sh "-c"
       (pack "sox " (glue " " (need Times File)) " " New) ) )
 
-
+# silence values need tweaking
 (de record-beatz (File)
-   (call 'sh "-c" 
+   (call 'sh "-c"
       (text
-         "rec -r 48000 -b 16 -s -p silence 1 0.50 0.1% 1 10:00 0.1% | \
+         "rec -r 48000 -p silence 1 0.50 0.1% 1 10:00 0.1% | \
             sox -p @1 silence 1 0.50 0.1% 1 2.0 0.1% : \
             newfile : restart"
          File ) ) )
+
+(de record-beatz-over (File New)
+   (call 'sh "-c"
+      (text
+         "play -q @1 & rec -r 48000 -p silence 1 0.50 0.1% 1 10:00 0.1% | \
+            sox -p @2 silence 1 0.50 0.1% 1 2.0 0.1% : \
+            newfile : restart"
+         File New ) ) )
 
 (de lame (File) (call 'lame (pack File ".wav") (pack File ".mp3")))
 
