@@ -25,6 +25,12 @@
 (de record-stereo (File)
    (call 'rec "-r" "48000" "-c" "2" File))
 
+(de mono-mix-down (File)
+   (call 'sh "-c"
+      (text "sox @1 @2 remix 1-2"
+         File
+         (append-file-name File "-mono-mix-down.wav") ) ) )
+
 (de record-stereo-over (Orig New)
    (call 'sh "-c" (text "play -q @1 & rec -c 2 @2" Orig New)) )
 
