@@ -148,3 +148,11 @@
             File
             New ) )
       New ) )
+
+(de remove-noise (File)
+   (let New (append-file-name File "%.wav")
+      (sox
+         (text "@1 -n trim 0 1 noiseprof | sox @1 @2 noisered"
+            File
+            New ) )
+      New ) )
