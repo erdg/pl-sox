@@ -1,8 +1,13 @@
+# NOTE - depends on 'sox' (and optionally 'lame' for mp3 conversion).
+
 (de sox (Str) (call 'sh "-c" (pack "sox " Str)) )
+
+(de sh (Str) (call 'sh "-c" Str))
 
 (de sox? () (call 'man "sox"))
 
 (de mv (File New) (call 'mv File New) New)
+(de rm (File) (call 'rm File))
 
 (de play (File)
    (call 'sh "-c"
