@@ -81,16 +81,32 @@
 
 (scl 3)
 
-## (time-calc 4 "4/4" 60) -> "16.000"
-## (time-calc 4 "4/4" 88) -> "10.912"
+# time-calc - convert musical time to (milli)seconds
 #
-# NOTE - only does 4/4 for now
+#  (time-calc 2 "4/4" 60) -> "8.000"
+#  (time-calc 2 "7/8" 60) -> "7.500"
+#  (time-calc 4 "4/4" 88) -> "10.912" (four measures of 4/4 at 88bpm is 10.912 seconds)
 #
 (de time-calc (Measures TimeSig Tempo)
-   # convert musical time to seconds, e.g. "Four measures of 4/4 at 88bpm (1/4
-   # note) lasts 10.912 seconds"
    (default TimeSig "4/4")
-   (default Unit 4)
+   (let [C (split (chop TimeSig) "/")  # eg.  "7/8"
+         N (any (pack (car C)))        # N <-- 7
+         D (any (pack (cdr C))) ]      # D <---- 8
+      (format
+         (*/
+            (* Measures
+               N
+               (*/ 60 1.0 Tempo) )
+            1.0
+            (case D
+               (16 4.0)
+               (8  2.0)
+               (4  1.0) ) )
+         *Scl ) ) )
+
+# first draft - quarter note time sigs only ("3/4", "4/4", etc.)
+(de time-calc% (Measures TimeSig Tempo)
+   (default TimeSig "4/4")
    (format
       (* Measures
          (any (caar (split (chop TimeSig) "/")))
