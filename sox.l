@@ -23,7 +23,12 @@
    (call 'sh "-c" (text "play -q @1 & rec -c 1 @2" Orig New)) )
 
 (de record-stereo (File)
-   (call 'rec "-r" "48000" "-c" "2" File))
+   (ifn (member File (dir))
+      (call 'rec "-r" "48000" "-c" "2" File)
+      (prinl "File exists - overwrite it? Press \"T\" to continue")
+      (if (= (key) "T")
+         (call 'rec "-r" "48000" "-c" "2" File)
+         (nil (prinl "Aborted.")) ) ) )
 
 (de mono-mix-down (File)
    (call 'sh "-c"
