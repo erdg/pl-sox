@@ -157,7 +157,8 @@
    # make a recording loopable for a given number of Measures/Tempo/TimeSig
    (and File
       (remove-beggining-silence @)
-      (trim-audio-to-seconds @ (time-calc Measures TimeSig Tempo)) ) )
+      (trim-audio-to-seconds @ (time-calc Measures TimeSig Tempo))
+      (remove-pops @) ) )
 
 # TODO - implement using 'splice' instead of 'concatenate'
 (de loopify (File New Times)
@@ -196,6 +197,14 @@
    (let New (append-file-name File "%.wav")
       (sox
          (text "@1 -n trim 0 1 noiseprof | sox @1 @2 noisered"
+            File
+            New ) )
+      New ) )
+
+(de remove-pops (File)
+   (let New (append-file-name File "%.wav")
+      (sox
+         (text "@1 @2 fade q 0.04 0 0.04"
             File
             New ) )
       New ) )
