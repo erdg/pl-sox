@@ -126,7 +126,7 @@
                (4  1.0) ) )
          *Scl ) ) )
 
-# first draft - quarter note time sigs only ("3/4", "4/4", etc.)
+# first draft - basic time sigs only ("3/4", "4/4", etc.)
 (de time-calc% (Measures TimeSig Tempo)
    (default TimeSig "4/4")
    (format
