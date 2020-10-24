@@ -31,6 +31,9 @@
          (nil (prinl "Aborted."))
          (prog1 File (call 'rec "-r" "48000" "-c" "2" File)) ) ) )
 
+(de record-stereo-over (Orig New)
+   (call 'sh "-c" (text "play -q @1 & rec -c 2 @2" Orig New)) )
+
 (de mono-mix-down (File)
    (let New (append-file-name File "-mono.wav")
       (call 'sh "-c"
@@ -45,10 +48,6 @@
    (and
       (mono-mix-down File)
       (play @) ) )
-
-(de record-stereo-over (Orig New)
-   (call 'sh "-c" (text "play -q @1 & rec -c 2 @2" Orig New)) )
-
 
 ### TODO ###
 #
