@@ -32,10 +32,19 @@
          (prog1 File (call 'rec "-r" "48000" "-c" "2" File)) ) ) )
 
 (de mono-mix-down (File)
-   (call 'sh "-c"
-      (text "sox @1 @2 remix 1-2"
-         File
-         (append-file-name File "-mono-mix-down.wav") ) ) )
+   (let New (append-file-name File "-mono.wav")
+      (call 'sh "-c"
+         (text "sox @1 @2 remix 1-2"
+            File
+            New ) )
+      New ) )
+
+# rapid fire piano / vox mono mix
+(de quicktrack (File)
+   (record-stereo File)
+   (and
+      (mono-mix-down File)
+      (play @) ) )
 
 (de record-stereo-over (Orig New)
    (call 'sh "-c" (text "play -q @1 & rec -c 2 @2" Orig New)) )
