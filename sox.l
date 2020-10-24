@@ -17,7 +17,8 @@
    (call 'sh "-c" (text "play @1 @2" File Effects)) )
 
 (de record (File)
-   (call 'rec "-r" "48000" "-c" "1" File))
+   (prog1 File
+      (call 'rec "-r" "48000" "-c" "1" File) ) )
 
 (de record-over (Orig New)
    (call 'sh "-c" (text "play -q @1 & rec -c 1 @2" Orig New)) )
@@ -26,9 +27,9 @@
    (ifn (member File (dir))
       (call 'rec "-r" "48000" "-c" "2" File)
       (prinl "File exists - overwrite it? Press \"T\" to continue")
-      (if (= (key) "T")
-         (call 'rec "-r" "48000" "-c" "2" File)
-         (nil (prinl "Aborted.")) ) ) )
+      (ifn (= (key) "T")
+         (nil (prinl "Aborted."))
+         (prog1 File (call 'rec "-r" "48000" "-c" "2" File)) ) ) )
 
 (de mono-mix-down (File)
    (call 'sh "-c"
