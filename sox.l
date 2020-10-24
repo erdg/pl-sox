@@ -136,6 +136,17 @@
          (*/ 60 1.0 Tempo) )
       *Scl ) )
 
+# create more complex time structures
+#
+#  (time-calc-multi 160 (2 "7/8") (1 "4/4") (1 "6/8"))
+#
+(de time-calc-multi (Tempo . Lst)
+   (format
+      (apply +
+         (mapcar '((L) (any (time-calc (car L) (cadr L) Tempo)))
+            Lst ) )
+      *Scl ) )
+
 (de bpm->seconds/beat (Bpm)
    (format (*/ 60 1.0 Bpm) *Scl) )
 
