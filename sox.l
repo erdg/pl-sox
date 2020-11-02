@@ -196,7 +196,7 @@
 (de lame (File) (call 'lame (pack File ".wav") (pack File ".mp3")))
 
 (de normalize (File)
-   (let New (append-file-name File "_normalized.wav")
+   (let New (append-file-name File "-normalized.wav")
       (sox
          (text "--norm=-3 @1 @2"
             File
