@@ -9,6 +9,9 @@
 (de mv (File New) (call 'mv File New) New)
 (de rm (File) (call 'rm File))
 
+(de remove-unwanted-files ()
+   (mapc rm (filter '((S) (sub? "%" S)) (dir))) )
+
 (de play (File)
    (call 'sh "-c"
       (text "play @1" File)))
