@@ -156,17 +156,25 @@
    (any (bpm->seconds/beat Bpm)) )
 
 (de preloopify (File Measures TimeSig Tempo)
-   # make a recording loopable for a given number of Measures/Tempo/TimeSig
+   # make File loopable for the given Measures/Tempo/TimeSig
    (and File
       (remove-beggining-silence @)
       (trim-audio-to-seconds @ (time-calc Measures TimeSig Tempo))
-      (remove-pops @) ) )
+      (remove-pops @)
+      (prog1
+         (mv @ (append-file-name File "-preloop.wav"))
+         (remove-unwanted-files) ) ) )
 
 # TODO - implement using 'splice' instead of 'concatenate'
-(de loopify (File New Times)
-   # "sox FILE FILE FILE FILE FILE new.wav"
-   (call 'sh "-c"
-      (pack "sox " (glue " " (need Times File)) " " New) ) )
+(de loopify (File Times)
+   (let [Orig
+            (use @A @B
+               (match (append '(@A) (chop "-preloop") '(@B)) (chop File))
+               (pack @A @B) )
+         New (append-file-name Orig "-loop.wav") ]
+      # "sox FILE FILE FILE FILE FILE File-loop.wav"
+      (call 'sh "-c"
+         (pack "sox " (glue " " (need Times File)) " " New) ) ) )
 
 # silence values need tweaking
 (de record-beatz (File)
