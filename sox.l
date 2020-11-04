@@ -1,48 +1,118 @@
 # NOTE - depends on 'sox' (and optionally 'lame' for mp3 conversion).
 
-(de sox (Str) (call 'sh "-c" (pack "sox " Str)) )
 
-(de sh (Str) (call 'sh "-c" Str))
-
+# help
 (de sox? () (call 'man "sox"))
 
-(de mv (File New) (call 'mv File New) New)
-(de rm (File) (call 'rm File))
+# general
+(de sox (Str) (sh "sox @1" Str))
 
-(de remove-unwanted-files ()
-   (mapc rm (filter '((S) (sub? "%" S)) (dir))) )
 
-(de play (File)
-   (call 'sh "-c"
-      (text "play @1" File)))
+### play / record
+##
+#
+(de play (File) (sh "play @1" File))
 
 (de play-with-effects (File Effects)
-   (call 'sh "-c" (text "play @1 @2" File Effects)) )
+   (sh "play @1 @2" File Effects) )
+
+(de record-safely (@Recorder)
+   # read macro - captures symbol 'File. prevents accidental overwrites and adds
+   # some 'prinl's to make the output easier to parse.
+   (macro
+      '(ifn (member File (dir))
+         (prog1 File @Recorder (prinl))
+         (prinl)
+         (prinl "WARNING - File \"" File "\" exists. Press \"T\" to overwrite it.")
+         (ifn (= (key) "T")
+            (nil (prinl "Aborted."))
+            (prog1 File @Recorder (prinl)) ) ) ) )
 
 (de record (File)
-   (prog1 File
-      (call 'rec "-r" "48000" "-c" "1" File) ) )
+   `(record-safely '(_record File)) )
 
-(de record-over (Orig New)
-   (call 'sh "-c" (text "play -q @1 & rec -c 1 @2" Orig New)) )
+(de _record (File)
+   (sh "rec -c 1 @1" File) )
 
 (de record-stereo (File)
-   (ifn (member File (dir))
-      (call 'rec "-r" "48000" "-c" "2" File)
-      (prinl "File exists - overwrite it? Press \"T\" to continue")
-      (ifn (= (key) "T")
-         (nil (prinl "Aborted."))
-         (prog1 File (call 'rec "-r" "48000" "-c" "2" File)) ) ) )
+   `(record-safely '(_record-stereo File)) )
 
-(de record-stereo-over (Orig New)
-   (call 'sh "-c" (text "play -q @1 & rec -c 2 @2" Orig New)) )
+(de _record-stereo (File)
+   (sh "rec -c 2 @1" File) )
 
+(de record-over (File Over)
+   `(record-safely '(_record-over File Over)) )
+
+(de _record-over (File Over)
+   (sh "play -q @1 & rec -c 1 @2" Over File) )
+
+(de record-stereo-over (File Over)
+   `(record-safely '(_record-stereo-over File Over)) )
+
+(de _record-stereo-over (File Over)
+   (sh "play -q @1 & rec -c 2 @2" Over File) )
+
+# silence values need tweaking
+(de record-multi (File)
+   (call 'sh "-c"
+      (text
+         "rec -r 48000 -p silence 1 0.50 0.1% 1 10:00 0.1% | \
+            sox -p @1 silence 1 0.50 0.1% 1 2.0 0.1% : \
+            newfile : restart"
+         File ) ) )
+
+(de record-multi% (File)
+   (sh
+      "rec -r 48000 -p silence 1 0.50 0.1% 1 10:00 0.1% | \
+      sox -p @1 silence 1 0.50 0.1% 1 2.0 0.1% : \
+      newfile : restart"
+      File ) )
+
+(de record-multi-over (File New)
+   (call 'sh "-c"
+      (text
+         "play -q @1 & rec -r 48000 -p silence 1 0.50 0.1% 1 10:00 0.1% | \
+            sox -p @2 silence 1 0.50 0.1% 1 2.0 0.1% : \
+            newfile : restart"
+         File New ) ) )
+
+
+### mixes
+##
+#
+
+# NOTE - e.g. "-v 0.6 bass.wav" to adjust track volume in mix
+(de new-mix (Name . Tracks)
+   (call 'sh "-c"
+      (pack "sox -m " (glue " " Tracks) " " Name) ) )
+
+(de new-mix% (Name . Tracks)
+   (sh "sox -m @1 @2"
+      (glue " " Tracks)
+      Name )
+   Name )
+
+(de normalize (File)
+   (let New (append-file-name File "-normalized.wav")
+      (sox
+         (text "--norm=-3 @1 @2"
+            File
+            New ) )
+      New ) )
+
+# stereo -> mono
 (de mono-mix-down (File)
    (let New (append-file-name File "-mono.wav")
       (call 'sh "-c"
          (text "sox @1 @2 remix 1-2"
             File
             New ) )
+      New ) )
+
+(de mono-mix-down% (File)
+   (let New (append-file-name File "-mono.wav")
+      (sh "sox @1   @2 remix 1-2"
+               File New )
       New ) )
 
 # rapid fire piano / vox mono mix
@@ -52,27 +122,16 @@
       (mono-mix-down File)
       (play @) ) )
 
-### TODO ###
-#
-# Clean up the pollution! Must find a way to manage the growing
-# pile of files.
-#
-###
 
-# NOTE - e.g. "-v 0.6 bass.wav" to adjust track volume in mix
-(de new-mix (Name . Tracks)
-   (call 'sh "-c"
-      (pack "sox -m " (glue " " Tracks) " " Name) ) )
+##### editing fns
+###
+#
 
 (de remove-beggining-silence (File)
    (let New (append-file-name File "%.wav")
       (call 'sh "-c"
          (text "sox @1 @2 silence 1 0.1 1%" File New) )
       New ) )
-
-# NOTE - include ".whatever" in 'Text'
-(de append-file-name (File Text)
-   (pack (car (split (chop File) ".")) Text) )
 
 (de remove-ending-silence (File)
    (and File
@@ -103,6 +162,11 @@
             File
             New ) )
       New ) )
+
+
+##### musical time conversions
+###
+#
 
 (scl 3)
 
@@ -155,8 +219,10 @@
 (de bpm->ms/beat (Bpm)
    (any (bpm->seconds/beat Bpm)) )
 
+### looping
+
+# make File loopable for the given Measures/Tempo/TimeSig
 (de preloopify (File Measures TimeSig Tempo)
-   # make File loopable for the given Measures/Tempo/TimeSig
    (and File
       (remove-beggining-silence @)
       (trim-audio-to-seconds @ (time-calc Measures TimeSig Tempo))
@@ -176,32 +242,7 @@
       (call 'sh "-c"
          (pack "sox " (glue " " (need Times File)) " " New) ) ) )
 
-# silence values need tweaking
-(de record-multi (File)
-   (call 'sh "-c"
-      (text
-         "rec -r 48000 -p silence 1 0.50 0.1% 1 10:00 0.1% | \
-            sox -p @1 silence 1 0.50 0.1% 1 2.0 0.1% : \
-            newfile : restart"
-         File ) ) )
-
-(de record-multi-over (File New)
-   (call 'sh "-c"
-      (text
-         "play -q @1 & rec -r 48000 -p silence 1 0.50 0.1% 1 10:00 0.1% | \
-            sox -p @2 silence 1 0.50 0.1% 1 2.0 0.1% : \
-            newfile : restart"
-         File New ) ) )
-
 (de lame (File) (call 'lame (pack File ".wav") (pack File ".mp3")))
-
-(de normalize (File)
-   (let New (append-file-name File "-normalized.wav")
-      (sox
-         (text "--norm=-3 @1 @2"
-            File
-            New ) )
-      New ) )
 
 (de remove-noise (File)
    (let New (append-file-name File "%.wav")
@@ -218,3 +259,28 @@
             File
             New ) )
       New ) )
+
+### utils
+##
+#
+
+# abbrevation for a common pattern in this code
+(de sh (@Str . Rest)
+   (macro
+      (call 'sh "-c"
+         (text @Str
+            ^ Rest ) ) ) )
+
+(de rm (File)     (call 'rm File))
+(de mv (File New) (call 'mv File New) New)
+
+# sox operations create new files. sometimes three or more different sox calls
+# are made in a single lisp function. this creates a lot of "transitory files"
+# - files created during the process, but no longer desirable. these files are
+# marked with '%'s and can be removed with the  following function.
+(de remove-unwanted-files ()
+   (mapc rm (filter '((S) (sub? "%" S)) (dir))) )
+
+# NOTE - include ".whatever" in 'Text'
+(de append-file-name (File Text)
+   (pack (car (split (chop File) ".")) Text) )
