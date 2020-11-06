@@ -5,12 +5,13 @@
 (de sox? () (call 'man "sox"))
 
 # general
-(de sox (Str) (sh "sox @1" Str))
+(de sox (@Str . Rest) (macro (sh (pack "sox " @Str) ^ Rest)))
 
 
 ### play / record
 ##
 #
+
 (de play (File) (sh "play @1" File))
 
 (de play-with-effects (File Effects)
@@ -87,32 +88,18 @@
       (pack "sox -m " (glue " " Tracks) " " Name) ) )
 
 (de new-mix% (Name . Tracks)
-   (sh "sox -m @1 @2"
-      (glue " " Tracks)
-      Name )
+   (sox "-m @1 @2" (glue " " Tracks) Name)
    Name )
 
 (de normalize (File)
    (let New (append-file-name File "-normalized.wav")
-      (sox
-         (text "--norm=-3 @1 @2"
-            File
-            New ) )
+      (sox "--norm=-3 @1 @2" File New)
       New ) )
 
 # stereo -> mono
 (de mono-mix-down (File)
    (let New (append-file-name File "-mono.wav")
-      (call 'sh "-c"
-         (text "sox @1 @2 remix 1-2"
-            File
-            New ) )
-      New ) )
-
-(de mono-mix-down% (File)
-   (let New (append-file-name File "-mono.wav")
-      (sh "sox @1   @2 remix 1-2"
-               File New )
+      (sox "@1 @2 remix 1-2" File New)
       New ) )
 
 # rapid fire piano / vox mono mix
@@ -122,6 +109,9 @@
       (mono-mix-down File)
       (play @) ) )
 
+# mp3 conversion
+(de lame (File) (call 'lame (pack File ".wav") (pack File ".mp3")))
+
 
 ##### editing fns
 ###
@@ -129,8 +119,9 @@
 
 (de remove-beggining-silence (File)
    (let New (append-file-name File "%.wav")
-      (call 'sh "-c"
-         (text "sox @1 @2 silence 1 0.1 1%" File New) )
+      (sox "@1 @2 silence 1 0.1 1%"
+         File
+         New )
       New ) )
 
 (de remove-ending-silence (File)
@@ -141,28 +132,37 @@
 
 (de reverse-audio (File)
    (let New (append-file-name File "%.wav")
-      (call 'sh "-c"
-         (text "sox @1 @2 reverse" File New) )
+      (sox "@1 @2 reverse"
+         File
+         New )
       New ) )
 
 (de trim-audio-to-seconds (File Secs)
    (let New (append-file-name File "%.wav")
-      (call 'sh "-c"
-         (text "sox @1 @2 trim 0 @3"
-            File
-            New
-            Secs ) )
+      (sox "@1 @2 trim 0 @3"
+         File
+         New
+         Secs )
       New ) )
 
 (de volume (File Vol)
    (let New (append-file-name File "%.wav")
-      (call 'sh "-c"
-         (text "sox -v @1 @2 @3"
-            Vol
-            File
-            New ) )
+      (sox "-v @1 @2 @3" Vol File New)
       New ) )
 
+(de remove-noise (File)
+   (let New (append-file-name File "%.wav")
+      (sox "@1 -n trim 0 1 noiseprof | sox @1 @2 noisered"
+         File
+         New)
+      New ) )
+
+(de remove-pops (File)
+   (let New (append-file-name File "%.wav")
+      (sox "@1 @2 fade q 0.04 0 0.04"
+         File
+         New )
+      New ) )
 
 ##### musical time conversions
 ###
@@ -219,7 +219,10 @@
 (de bpm->ms/beat (Bpm)
    (any (bpm->seconds/beat Bpm)) )
 
-### looping
+
+######### looping
+#####
+#
 
 # make File loopable for the given Measures/Tempo/TimeSig
 (de preloopify (File Measures TimeSig Tempo)
@@ -231,33 +234,18 @@
          (mv @ (append-file-name File "-preloop.wav"))
          (remove-unwanted-files) ) ) )
 
-# TODO - implement using 'splice' instead of 'concatenate'
+# simple audio file concatination
 (de loopify (File Times)
+   # "sox FILE FILE FILE FILE FILE File-loop.wav"
    (let [Orig
             (use @A @B
-               (match (append '(@A) (chop "-preloop") '(@B)) (chop File))
-               (pack @A @B) )
+               (if (match (append '(@A) (chop "-preloop") '(@B)) (chop File))
+                  (pack @A @B)
+                  File ) )
          New (append-file-name Orig "-loop.wav") ]
-      # "sox FILE FILE FILE FILE FILE File-loop.wav"
-      (call 'sh "-c"
-         (pack "sox " (glue " " (need Times File)) " " New) ) ) )
-
-(de lame (File) (call 'lame (pack File ".wav") (pack File ".mp3")))
-
-(de remove-noise (File)
-   (let New (append-file-name File "%.wav")
-      (sox
-         (text "@1 -n trim 0 1 noiseprof | sox @1 @2 noisered"
-            File
-            New ) )
-      New ) )
-
-(de remove-pops (File)
-   (let New (append-file-name File "%.wav")
-      (sox
-         (text "@1 @2 fade q 0.04 0 0.04"
-            File
-            New ) )
+      (sox "@1 @2"
+         (glue " " (need Times File))
+         New )
       New ) )
 
 ### utils
@@ -275,8 +263,8 @@
 (de mv (File New) (call 'mv File New) New)
 
 # sox operations create new files. sometimes three or more different sox calls
-# are made in a single lisp function. this creates a lot of "transitory files"
-# - files created during the process, but no longer desirable. these files are
+# are made in a single lisp function. this creates a lot of "transient files" -
+# files created during the process, but no longer desirable. these files are
 # marked with '%'s and can be removed with the  following function.
 (de remove-unwanted-files ()
    (mapc rm (filter '((S) (sub? "%" S)) (dir))) )
