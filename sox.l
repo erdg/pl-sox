@@ -47,6 +47,12 @@
 (de _record-over (File Over)
    (sh "play -q @1 & rec -c 1 @2" Over File) )
 
+(de record-over-loop (File Over)
+   `(record-safely '(_record-over-loop File Over)) )
+
+(de _record-over-loop (File Over)
+   (sh "play -q @1 repeat - & rec -c 1 @2" Over File) )
+
 (de record-stereo-over (File Over)
    `(record-safely '(_record-stereo-over File Over)) )
 
