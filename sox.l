@@ -105,6 +105,9 @@
       New ) )
 
 # rapid fire piano / vox mono mix
+#
+# NOTE - this isn't really needed, just use 'record' with both channels
+# activated.
 (de quicktrack (File)
    (record-stereo File)
    (and
