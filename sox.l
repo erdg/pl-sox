@@ -125,6 +125,7 @@
 (de remove-beggining-silence (File)
    (let New (append-file-name File "%.wav")
       (sox "@1 @2 silence 1 0.1 1%"
+      # (sox "@1 @2 silence 1 5 2%"
          File
          New )
       New ) )
