@@ -90,10 +90,6 @@
 
 # NOTE - e.g. "-v 0.6 bass.wav" to adjust track volume in mix
 (de new-mix (Name . Tracks)
-   (call 'sh "-c"
-      (pack "sox -m " (glue " " Tracks) " " Name) ) )
-
-(de new-mix% (Name . Tracks)
    (sox "-m @1 @2" (glue " " Tracks) Name)
    Name )
 
