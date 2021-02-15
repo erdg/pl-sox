@@ -241,7 +241,7 @@
          (remove-unwanted-files) ) ) )
 
 # simple audio file concatination
-(de loopify (File Times)
+(de loopify% (File Times)
    # "sox FILE FILE FILE FILE FILE File-loop.wav"
    (let [Orig
             (use @A @B
@@ -253,6 +253,25 @@
          (glue " " (need Times File))
          New )
       New ) )
+
+(de loopify (New N File)
+   # "sox FILE FILE FILE FILE FILE NEW"
+   (sox "@1 @2"
+      (glue " " (need N File))
+      New )
+   New )
+
+### custom metronomes
+
+# variation of 'preloopify'
+(de new-click (File Tempo)
+   (and File
+      (remove-beggining-silence @)
+      (trim-audio-to-seconds @ (time-calc 1 "1/4" Tempo))
+      (remove-pops @)
+      (prog1
+         (mv @ (append-file-name File (pack "_" Tempo "bpm.wav")))
+         (remove-unwanted-files) ) ) )
 
 ### utils
 ##
