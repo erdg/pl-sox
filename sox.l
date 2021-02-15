@@ -294,6 +294,6 @@
 (de remove-unwanted-files ()
    (mapc rm (filter '((S) (sub? "%" S)) (dir))) )
 
-# NOTE - include ".whatever" in 'Text'
+# NOTE - include file extension (e.g. ".wav") in 'Text'
 (de append-file-name (File Text)
    (pack (car (split (chop File) ".")) Text) )
