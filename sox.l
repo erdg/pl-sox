@@ -435,8 +435,8 @@
          (text @Str
             ^ Rest ) ) ) )
 
-(de rm (File)     (call 'rm File))
-(de mv (File New) (call 'mv File New) New)
+(de rm (File)    (call 'rm File))
+(de mv (From To) (call 'mv From To) To)
 
 # sox operations create new files. sometimes three or more different sox calls
 # are made in a single lisp function. this creates a lot of "transient files" -
