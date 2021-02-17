@@ -170,6 +170,29 @@
          New )
       New ) )
 
+(de remove-grain-pops (File)
+   (let New (append-file-name File "%.wav")
+      (sox "@1 @2 fade q 0.001 0 0.001"
+         File
+         New )
+      New ) )
+
+(de fade-audio (File FadeOpts)
+   (let New (append-file-name File "%.wav")
+      (sox "@1 @2 fade @3"
+         File
+         New
+         FadeOpts )
+      New ) )
+
+(de pad-audio (File PadOpts)
+   (let New (append-file-name File "%.wav")
+      (sox "@1 @2 pad @3"
+         File
+         New
+         PadOpts )
+      New ) )
+
 ##### musical time conversions
 ###
 #
