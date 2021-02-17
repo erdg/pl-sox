@@ -297,6 +297,133 @@
          (mv @ (append-file-name File (pack "_" Tempo "bpm.wav")))
          (remove-unwanted-files) ) ) )
 
+# another variation of 'preloopify'
+(de samplify (New File Duration Tempo)
+   (and File
+      (remove-beggining-silence @)
+      (trim-audio-to-seconds @ (time-calc 1 (pack "1/" Duration) Tempo))
+      (remove-pops @)
+      (prog1
+         (mv @ New)
+         (remove-unwanted-files) ) ) )
+
+# newb granular synthesis
+(de new-grain (New From Duration)
+   (and From
+      (remove-beggining-silence @)
+      (trim-audio-to-seconds @ Duration)
+      (prog1
+         (mv @ New)
+         (remove-unwanted-files) ) ) )
+
+# bulk grains
+(de chop-audio (From New Duration)
+   (sox "@1 @2 trim 0 @3 : newfile : restart"
+      From
+      New
+      Duration ) )
+
+(de chop-audio-to-dir (From New Duration)
+   (call 'mkdir New)
+   (sox "@1 @2 trim 0 @3 : newfile : restart"
+      From
+      (pack New "_.wav")
+      Duration )
+   (for Grain (filter '((X) (pre? (pack New "_") X)) (dir))
+      (mv Grain New) )
+   (chdir New
+      (for File (dir)
+         (and
+            (remove-grain-pops File) # file%.wav
+            (mv @ File) ) )  # rename to original
+      (remove-unwanted-files) ) )
+
+# reverse all audio files in directory
+(de reverse-all-audio-in-dir (Dir)
+   (chdir Dir
+      (for File (dir)
+        (and
+           (reverse-audio File)
+           (mv @ File) ) )
+      (remove-unwanted-files) ) )
+
+# mess with envelopes
+(de apply-random-fades-to-cloud (Dir)
+   (chdir Dir
+      (for File (dir)
+         (and
+            (fade-audio File
+               (pack "t 0.0" (rand 4 20)) )
+            (mv @ File) ) )
+      (remove-unwanted-files) ) )
+
+(de apply-random-silence-to-cloud (Dir)
+   (chdir Dir
+      (for File (dir)
+         (and
+            (pad-audio File
+               (pack "0.0" (rand 4 20)) )
+            (mv @ File) ) )
+      (remove-unwanted-files) ) )
+
+# there seems to be a pattern here
+# implicit "cloud" (directory) name as first arg
+(de define-cloud-fn Lst
+   (let [(@Nm Args . Fn) Lst]
+      (macro
+         (de @Nm (Dir ^ Args)
+            (chdir Dir
+               (for File (dir)   # 'File' is captured for use
+                  (and
+                     ^ Fn
+                     (mv @ File) ) )
+               (remove-unwanted-files) ) ) ) ) )
+
+(define-cloud-fn apply-20ms-linear-fade-in ()
+   (fade-audio File "t 0.02") )  # 'File' is used in definition
+
+(define-cloud-fn apply-fade-to-cloud (FadeOpts) (fade-audio File FadeOpts))
+
+# render track from cloud directory
+(de render-from-cloud (New Cloud . Gen)
+   (chdir Cloud
+      (macro (sox "@1 @2" (glue " " ^ Gen) New))
+      (mv New "..") ) )
+
+# render track of length 'Samples' from multiple cloud directories
+# (random-render-from-clouds "new-track.wav" (duration-as-samples "file.wav") "cloud1" "cloud2" "cloud3")
+(de random-render-from-clouds (Name Samples . Clouds)
+   (sox "@1 @2"
+      (glue " "
+         (make
+            (let Cnt 0
+               (loop
+                  (T (<= Samples Cnt) (made))
+                  (chdir (choose Clouds)
+                     (let [File (choose (dir))
+                           Smpls (duration-as-samples File)]
+                        (link (pack (pwd) "/" File))
+                        (inc 'Cnt Smpls) ) ) ) ) ) )
+      Name ) )
+
+(de choose (Lst)
+   (car (nth Lst (rand 1 (length Lst)))) )
+
+(de duration-as-samples (File)
+   (and
+      (in (list 'soxi File)
+         (make
+            (until (eof)
+               (when (pre? "D" (line))
+                  (link @) ) ) ) )
+      (++ @)
+      (chop @)
+      (stem @ "=")
+      (clip @)
+      (pack @)
+      (split (chop @) " ")
+      (any (pack (car @))) ) )
+
 ### utils
 ##
 #
